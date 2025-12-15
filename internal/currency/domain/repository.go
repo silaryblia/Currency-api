@@ -5,6 +5,6 @@ type CurrencyRepository interface {
 	GetAll() (map[string]float64, error)
 	Create(code string, rate float64) error
 	UpdateOne(code string, rate float64) error
-	UpdateAll()
+	UpdateAll() error
 	DeleteAll() error
 }
