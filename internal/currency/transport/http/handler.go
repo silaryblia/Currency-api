@@ -11,11 +11,11 @@ import (
 )
 
 type Handler struct {
-	service domain.CurrencyService
+	service domain.CurrencyRepository
 	logger  *zap.Logger
 }
 
-func NewHandler(service domain.CurrencyService, logger *zap.Logger) *Handler {
+func NewHandler(service domain.CurrencyRepository, logger *zap.Logger) *Handler {
 	return &Handler{service: service, logger: logger}
 }
 

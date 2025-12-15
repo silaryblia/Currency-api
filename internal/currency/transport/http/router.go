@@ -1,22 +1,19 @@
 package http
 
 import (
-	"Currency-apiNew2/internal/currency/repository/memory"
-	"Currency-apiNew2/internal/currency/service"
+	"Currency-apiNew2/internal/currency/domain"
 
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 )
 
-func NewRouter(logger *zap.Logger) *mux.Router {
+func NewRouter(svc domain.CurrencyRepository, logger *zap.Logger) *mux.Router {
 	r := mux.NewRouter()
 
 	// Apply middlewares
 	r.Use(JSONMiddleware)
 	r.Use(recoveryMiddleware(logger))
 
-	repo := memory.NewCurrencyRepoInMemory(logger)
-	svc := service.NewCurrencyService(repo)
 	h := NewHandler(svc, logger)
 
 	api := r.PathPrefix("/api/v1").Subrouter()
