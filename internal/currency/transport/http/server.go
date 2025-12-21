@@ -2,8 +2,8 @@ package http
 
 import (
 	"Currency-apiNew2/internal/currency/domain"
+	"Currency-apiNew2/internal/currency/provider"
 	"Currency-apiNew2/internal/currency/repository"
-	_ "Currency-apiNew2/internal/currency/repository"
 	"Currency-apiNew2/internal/currency/service"
 	"context"
 	"database/sql"
@@ -14,32 +14,45 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	_ "github.com/lib/pq"
 	"go.uber.org/zap"
 )
 
 type Server struct {
-	service *service.CurrencyService
-	router  *mux.Router
-	logger  *zap.Logger
+	//service *service.CurrencyService
+	router *mux.Router
+	logger *zap.Logger
 }
 
 func NewServer(logger *zap.Logger) *Server {
 	var repo domain.CurrencyRepository
 
 	if os.Getenv("USE_POSTGRES") == "true" {
-		db, err := sql.Open("postgres", os.Getenv("POSTGRES_DSN"))
+		dsn := os.Getenv("POSTGRES_DSN")
+		db, err := sql.Open("postgres", dsn)
 		if err != nil {
 			logger.Fatal("failed to connect postgres", zap.Error(err))
 		}
 
-		repo = repository.NewCurrencyRepoPostgres(db, logger)
+		if err := db.Ping(); err != nil {
+			logger.Fatal("cannot ping postgres", zap.Error(err))
+		}
+
 		logger.Info("using Postgres repository")
+		repo = repository.NewCurrencyRepoPostgres(db, logger)
 	} else {
-		repo = repository.NewCurrencyRepoInMemory(logger)
 		logger.Info("using InMemory repository")
+		repo = repository.NewCurrencyRepoInMemory(logger)
 	}
 
-	svc := service.NewCurrencyService(repo)
+	// Базовый провайдер ЦБ РФ
+	baseProvider := provider.NewCBRProvider()
+
+	// Кеш на 24 часа
+	cachedProvider := provider.NewCachedProvider(baseProvider, 24*time.Hour)
+
+	// В сервис передаём КЕШ
+	svc := service.NewCurrencyService(repo, cachedProvider)
 	r := NewRouter(svc, logger)
 
 	return &Server{
@@ -50,7 +63,7 @@ func NewServer(logger *zap.Logger) *Server {
 
 func (s *Server) Run() error {
 	httpServer := &http.Server{
-		Addr:    ":8080",
+		Addr:    ":8081",
 		Handler: s.router,
 	}
 

@@ -12,14 +12,17 @@ type APIResponse struct {
 }
 
 func WriteJSON(w http.ResponseWriter, status int, data interface{}, errMsg string) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-
 	resp := APIResponse{
 		Success: errMsg == "",
 		Data:    data,
 		Error:   errMsg,
 	}
 
-	json.NewEncoder(w).Encode(resp)
+	w.Header().Set("Content-Type", "application/json")
+
+	if rw, ok := w.(interface{ Written() bool }); !ok || !rw.Written() {
+		w.WriteHeader(status)
+	}
+
+	_ = json.NewEncoder(w).Encode(resp)
 }
