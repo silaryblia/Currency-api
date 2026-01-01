@@ -2,6 +2,7 @@ package repository
 
 import (
 	"Currency-apiNew2/internal/currency/domain"
+	"context"
 	"database/sql"
 	"strings"
 	"sync"
@@ -21,6 +22,7 @@ func NewCurrencyRepoPostgres(db *sql.DB, logger *zap.Logger) *CurrencyRepoPostgr
 }
 
 func (r *CurrencyRepoPostgres) Upsert(
+	ctx context.Context,
 	code string,
 	rate float64,
 	rateDate time.Time,
@@ -30,39 +32,41 @@ func (r *CurrencyRepoPostgres) Upsert(
 
 	code = strings.ToUpper(strings.TrimSpace(code))
 
-	_, err := r.db.Exec(`
+	_, err := r.db.ExecContext(ctx, `
 		INSERT INTO currencies (code, rate, rate_date)
 		VALUES ($1, $2, $3)
 		ON CONFLICT (code) DO UPDATE SET
 		    rate = EXCLUDED.rate,
 		    rate_date = EXCLUDED.rate_date
 		
-	`,
-		code, rate, rateDate)
+	`, code, rate, rateDate)
 
 	return err
 }
 
-func (r *CurrencyRepoPostgres) GetOne(code string) (domain.Currency, error) {
+func (r *CurrencyRepoPostgres) GetOne(
+	ctx context.Context,
+	code string) (domain.Currency, error) {
 	code = strings.ToUpper(strings.TrimSpace(code))
 
 	var c domain.Currency
 
-	err := r.db.QueryRow(`
+	err := r.db.QueryRowContext(ctx, `
 		SELECT code, rate, rate_date
 		FROM currencies
 		WHERE code = $1
 	`, code).Scan(&c.Code, &c.Rate, &c.RateDate)
 
 	if err == sql.ErrNoRows {
-		return c, domain.ErrNotFound
+
+		return domain.Currency{}, domain.ErrNotFound
 	}
 
 	return c, err
 }
 
-func (r *CurrencyRepoPostgres) GetAll() (map[string]domain.Currency, error) {
-	rows, err := r.db.Query(`
+func (r *CurrencyRepoPostgres) GetAll(ctx context.Context) (map[string]domain.Currency, error) {
+	rows, err := r.db.QueryContext(ctx, `
 		SELECT code, rate, rate_date
 		FROM currencies
 		ORDER BY code
@@ -85,10 +89,11 @@ func (r *CurrencyRepoPostgres) GetAll() (map[string]domain.Currency, error) {
 	return result, nil
 }
 
-func (r *CurrencyRepoPostgres) Create(code string, rate float64, date time.Time) error {
-	code = strings.ToUpper(code)
+func (r *CurrencyRepoPostgres) Create(ctx context.Context, code string, rate float64, date time.Time) error {
+	code = strings.ToUpper(strings.TrimSpace(code))
 
-	_, err := r.db.Exec(
+	_, err := r.db.ExecContext(
+		ctx,
 		`INSERT INTO currencies (code, rate) VALUES ($1, $2, $3)`,
 		code,
 		rate,
@@ -102,10 +107,11 @@ func (r *CurrencyRepoPostgres) Create(code string, rate float64, date time.Time)
 	return nil
 }
 
-func (r *CurrencyRepoPostgres) UpdateOne(code string, rate float64, date time.Time) error {
-	code = strings.ToUpper(code)
+func (r *CurrencyRepoPostgres) UpdateOne(ctx context.Context, code string, rate float64, date time.Time) error {
+	code = strings.ToUpper(strings.TrimSpace(code))
 
-	res, err := r.db.Exec(
+	res, err := r.db.ExecContext(
+		ctx,
 		`UPDATE currencies SET rate = $1, rate_date = $2 WHERE code = $3`,
 		rate, date, code,
 	)
@@ -122,12 +128,17 @@ func (r *CurrencyRepoPostgres) UpdateOne(code string, rate float64, date time.Ti
 	return nil
 }
 
-func (r *CurrencyRepoPostgres) UpdateAll() error {
-	_, err := r.db.Exec(`UPDATE currencies SET rate_date = $1`, time.Now())
+func (r *CurrencyRepoPostgres) UpdateAll(ctx context.Context) error {
+	_, err := r.db.ExecContext(
+		ctx,
+		`UPDATE currencies SET rate_date = $1`,
+		time.Now(),
+	)
+
 	return err
 }
 
-func (r *CurrencyRepoPostgres) DeleteAll() error {
-	_, err := r.db.Exec(`DELETE FROM currencies`)
+func (r *CurrencyRepoPostgres) DeleteAll(ctx context.Context) error {
+	_, err := r.db.ExecContext(ctx, `DELETE FROM currencies`)
 	return err
 }

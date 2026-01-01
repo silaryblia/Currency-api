@@ -17,29 +17,28 @@ func NewCurrencyService(repo domain.CurrencyRepository, provider domain.RatesPro
 		provider: provider}
 }
 
-func (s *CurrencyService) GetAll() (map[string]domain.Currency, error) {
-	return s.repo.GetAll()
+func (s *CurrencyService) GetAll(ctx context.Context) (map[string]domain.Currency, error) {
+	return s.repo.GetAll(ctx)
 }
 
-func (s *CurrencyService) GetOne(code string) (domain.Currency, error) {
-	return s.repo.GetOne(code)
+func (s *CurrencyService) GetOne(ctx context.Context, code string) (domain.Currency, error) {
+	return s.repo.GetOne(ctx, code)
 }
 
-func (s *CurrencyService) Create(code string, rate float64, date time.Time) error {
-	return s.repo.Create(code, rate, date)
+func (s *CurrencyService) Create(ctx context.Context, code string, rate float64, date time.Time) error {
+	return s.repo.Create(ctx, code, rate, date)
 }
 
-func (s *CurrencyService) UpdateOne(code string, rate float64, date time.Time) error {
-	return s.repo.UpdateOne(code, rate, date)
+func (s *CurrencyService) UpdateOne(ctx context.Context, code string, rate float64, date time.Time) error {
+	return s.repo.UpdateOne(ctx, code, rate, date)
 }
 
-func (s *CurrencyService) UpdateAll() error {
-	s.repo.UpdateAll()
-	return nil
+func (s *CurrencyService) UpdateAll(ctx context.Context) error {
+	return s.repo.UpdateAll(ctx)
 }
 
-func (s *CurrencyService) DeleteAll() error {
-	return s.repo.DeleteAll()
+func (s *CurrencyService) DeleteAll(ctx context.Context) error {
+	return s.repo.DeleteAll(ctx)
 }
 
 func (s *CurrencyService) SyncRates(ctx context.Context) error {
@@ -49,7 +48,7 @@ func (s *CurrencyService) SyncRates(ctx context.Context) error {
 	}
 
 	for code, rate := range rates {
-		if err := s.repo.Upsert(code, rate, rateDate); err != nil {
+		if err := s.repo.Upsert(ctx, code, rate, rateDate); err != nil {
 			return err
 		}
 	}

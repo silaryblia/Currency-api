@@ -1,36 +1,30 @@
-services:
-postgres:
-image: postgres:15-alpine
-container_name: currency-postgres
-environment:
-POSTGRES_USER: currency
-POSTGRES_PASSWORD: currency
-POSTGRES_DB: currency
-ports:
-- "5432:5432"
-volumes:
-- currency-data:/var/lib/postgresql/data
-- ./init.sql:/docker-entrypoint-initdb.d/init.sql
-healthcheck:
-test: ["CMD-SHELL", "pg_isready -U currency"]
-interval: 5s
-timeout: 5s
-retries: 10
-restart: unless-stopped
+package main
 
-currency-api:
-build: .
-container_name: currency-api
-depends_on:
-postgres:
-condition: service_healthy
-environment:
-USE_POSTGRES: "true"
-POSTGRES_DSN: "postgres://currency:currency@postgres:5432/currency?sslmode=disable"
-PORT: "8081"
-ports:
-- "8081:8081"
-restart: unless-stopped
+import (
+	"Currency-apiNew2/internal/currency/provider"
+	"Currency-apiNew2/internal/currency/repository"
+	"Currency-apiNew2/internal/currency/service"
+	"Currency-apiNew2/internal/currency/transport/grpc"
+	_ "Currency-apiNew2/internal/currency/transport/http"
+	"Currency-apiNew2/pkg/logger"
+	_ "context"
+	"time"
 
-volumes:
-currency-data:
+	_ "go.uber.org/zap"
+)
+
+func main() {
+	log := logger.New()
+
+	// Базовый провайдер ЦБ РФ
+	baseProvider := provider.NewCBRProvider()
+
+	// Кеш на 24 часа
+	cachedProvider := provider.NewCachedProvider(baseProvider, 24*time.Hour)
+
+	repo := repository.NewCurrencyRepoInMemory(log) // или Postgres
+
+	svc := service.NewCurrencyService(repo, cachedProvider)
+
+	grpc.RunServer(svc)
+}

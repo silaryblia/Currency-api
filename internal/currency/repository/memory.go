@@ -2,6 +2,7 @@ package repository
 
 import (
 	"Currency-apiNew2/internal/currency/domain"
+	"context"
 	_ "math/rand"
 	"strings"
 	"sync"
@@ -47,7 +48,7 @@ func NewCurrencyRepoInMemory(logger *zap.Logger) *CurrencyRepoInMemory {
 	}
 }
 
-func (r *CurrencyRepoInMemory) GetOne(code string) (domain.Currency, error) {
+func (r *CurrencyRepoInMemory) GetOne(ctx context.Context, code string) (domain.Currency, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -62,7 +63,7 @@ func (r *CurrencyRepoInMemory) GetOne(code string) (domain.Currency, error) {
 	return c, nil
 }
 
-func (r *CurrencyRepoInMemory) GetAll() (map[string]domain.Currency, error) {
+func (r *CurrencyRepoInMemory) GetAll(ctx context.Context) (map[string]domain.Currency, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
@@ -74,7 +75,7 @@ func (r *CurrencyRepoInMemory) GetAll() (map[string]domain.Currency, error) {
 	return res, nil
 }
 
-func (r *CurrencyRepoInMemory) Upsert(code string, rate float64, date time.Time) error {
+func (r *CurrencyRepoInMemory) Upsert(ctx context.Context, code string, rate float64, date time.Time) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -88,7 +89,7 @@ func (r *CurrencyRepoInMemory) Upsert(code string, rate float64, date time.Time)
 }
 
 // add new currency
-func (r *CurrencyRepoInMemory) Create(code string, rate float64, date time.Time) error {
+func (r *CurrencyRepoInMemory) Create(ctx context.Context, code string, rate float64, date time.Time) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -108,7 +109,7 @@ func (r *CurrencyRepoInMemory) Create(code string, rate float64, date time.Time)
 }
 
 // update one currency
-func (r *CurrencyRepoInMemory) UpdateOne(code string, rate float64, date time.Time) error {
+func (r *CurrencyRepoInMemory) UpdateOne(ctx context.Context, code string, rate float64, date time.Time) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -132,7 +133,7 @@ func (r *CurrencyRepoInMemory) UpdateOne(code string, rate float64, date time.Ti
 }
 
 // Update
-func (r *CurrencyRepoInMemory) UpdateAll() error {
+func (r *CurrencyRepoInMemory) UpdateAll(ctx context.Context) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -146,7 +147,7 @@ func (r *CurrencyRepoInMemory) UpdateAll() error {
 }
 
 // Delete
-func (r *CurrencyRepoInMemory) DeleteAll() error {
+func (r *CurrencyRepoInMemory) DeleteAll(ctx context.Context) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 

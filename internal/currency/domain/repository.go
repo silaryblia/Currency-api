@@ -1,14 +1,17 @@
 package domain
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 type CurrencyRepository interface {
-	GetOne(code string) (Currency, error)
-	GetAll() (map[string]Currency, error)
-	Create(code string, rate float64, date time.Time) error
-	UpdateOne(code string, rate float64, date time.Time) error
-	UpdateAll() error
-	DeleteAll() error
+	GetOne(ctx context.Context, code string) (Currency, error)
+	GetAll(ctx context.Context) (map[string]Currency, error)
+	Create(ctx context.Context, code string, rate float64, date time.Time) error
+	UpdateOne(ctx context.Context, code string, rate float64, date time.Time) error
+	UpdateAll(ctx context.Context) error
+	DeleteAll(ctx context.Context) error
 
-	Upsert(code string, rate float64, date time.Time) error
+	Upsert(ctx context.Context, code string, rate float64, date time.Time) error
 }

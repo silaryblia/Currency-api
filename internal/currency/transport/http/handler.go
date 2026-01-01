@@ -22,7 +22,7 @@ func NewHandler(svc *service.CurrencyService, logger *zap.Logger) *Handler {
 }
 
 func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
-	rates, err := h.service.GetAll()
+	rates, err := h.service.GetAll(r.Context())
 	if err != nil {
 		WriteJSON(w, http.StatusInternalServerError, nil, err.Error())
 		return
@@ -37,7 +37,7 @@ func (h *Handler) GetOne(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	code := strings.ToUpper(vars["code"])
 
-	rate, err := h.service.GetOne(code)
+	rate, err := h.service.GetOne(r.Context(), code)
 	if err != nil {
 		WriteJSON(w, http.StatusNotFound, nil, "Currency not found")
 		return
@@ -73,7 +73,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.service.Create(req.Code, req.Rate, date); err != nil {
+	if err := h.service.Create(r.Context(), req.Code, req.Rate, date); err != nil {
 		WriteJSON(w, http.StatusBadRequest, nil, err.Error())
 		return
 	}
@@ -103,7 +103,7 @@ func (h *Handler) UpdateOne(w http.ResponseWriter, r *http.Request) {
 
 	date := time.Now()
 
-	if err := h.service.UpdateOne(req.Code, req.Rate, date); err != nil {
+	if err := h.service.UpdateOne(r.Context(), req.Code, req.Rate, date); err != nil {
 		WriteJSON(w, http.StatusBadRequest, nil, err.Error())
 		return
 	}
@@ -116,17 +116,17 @@ func (h *Handler) UpdateOne(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) UpdateAll(w http.ResponseWriter, r *http.Request) {
-	if err := h.service.UpdateAll(); err != nil {
+	if err := h.service.UpdateAll(r.Context()); err != nil {
 		WriteJSON(w, http.StatusInternalServerError, nil, err.Error())
 		return
 	}
 
-	rates, _ := h.service.GetAll()
+	rates, _ := h.service.GetAll(r.Context())
 	WriteJSON(w, http.StatusOK, rates, "")
 }
 
 func (h *Handler) DeleteAll(w http.ResponseWriter, r *http.Request) {
-	h.service.DeleteAll()
+	h.service.DeleteAll(r.Context())
 
 	WriteJSON(w, http.StatusOK, map[string]string{
 		"message": "Все курсы удалены",
